@@ -13,12 +13,19 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from clients import load_embedding_model
 from routers.search_router import router as search_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup / shutdown lifecycle hook."""
+    """Startup / shutdown lifecycle hook.
+
+    Eagerly loads the embedding model so the server only starts accepting
+    traffic once the model is fully in memory — avoids a 10-30 s timeout
+    on the very first user request.
+    """
+    load_embedding_model()
     print("\n[INFO] E-Commerce RAG API is running!")
     print("Interactive docs -> http://127.0.0.1:8000/docs\n")
     yield

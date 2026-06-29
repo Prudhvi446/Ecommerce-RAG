@@ -11,22 +11,8 @@ import dll_loader
 
 from typing import List
 
-from sentence_transformers import SentenceTransformer
-
-from clients import pinecone_index
+from clients import pinecone_index, load_embedding_model
 from models.schemas import ParsedQuery, ProductResult
-
-
-# ── Module-level model cache (loaded once) ──────────────────────────────────
-_embedding_model: SentenceTransformer | None = None
-
-
-def _get_model() -> SentenceTransformer:
-    """Return the cached embedding model, loading it on first call."""
-    global _embedding_model
-    if _embedding_model is None:
-        _embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return _embedding_model
 
 
 def hybrid_search(parsed_query: ParsedQuery, top_k: int = 5) -> List[ProductResult]:
@@ -36,7 +22,7 @@ def hybrid_search(parsed_query: ParsedQuery, top_k: int = 5) -> List[ProductResu
     """
 
     # ── 1. Generate query embedding ─────────────────────────────────────────
-    model = _get_model()
+    model = load_embedding_model()
     query_embedding = model.encode(parsed_query.semantic_query).tolist()
 
     # ── 2. Build metadata filter dynamically ────────────────────────────────
