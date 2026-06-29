@@ -3,17 +3,21 @@ Response synthesiser — takes the raw query and search results and uses
 Groq (Llama 3 70B) to generate a friendly, conversational recommendation.
 """
 
+import logging
 from typing import List
-
-from groq import Groq
 
 from clients import groq_client
 from models.schemas import ProductResult
+
+logger = logging.getLogger(__name__)
 
 
 def generate_narrative(raw_query: str, results: List[ProductResult]) -> str:
     """
     Generate a conversational product recommendation based on search results.
+
+    If the LLM call fails (timeout, rate-limit, outage), returns a plain-text
+    fallback so the caller still receives usable search results.
     """
 
     if not results:
@@ -48,15 +52,28 @@ def generate_narrative(raw_query: str, results: List[ProductResult]) -> str:
         "and prices."
     )
 
-    # ── Call Groq ───────────────────────────────────────────────────────────
-    chat_completion = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message},
-        ],
-        temperature=0.7,
-        max_tokens=400,
-    )
+    # ── Call Groq (with graceful fallback) ──────────────────────────────────
+    try:
+        chat_completion = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.7,
+            max_tokens=400,
+        )
+        return chat_completion.choices[0].message.content.strip()
 
-    return chat_completion.choices[0].message.content.strip()
+    except Exception as exc:
+        logger.error("Narrative generation failed (%s: %s). Using fallback.", type(exc).__name__, exc)
+        # Return a simple but usable plain-text summary so the response
+        # still contains meaningful product information.
+        fallback_lines = [f"Here are the top results for '{raw_query}':\n"]
+        for r in results:
+            fallback_lines.append(f"• {r.name} by {r.brand} — ${r.price:.2f} (★ {r.rating})")
+        fallback_lines.append(
+            "\n(Our recommendation engine is temporarily unavailable. "
+            "Please check back shortly for personalized suggestions.)"
+        )
+        return "\n".join(fallback_lines)
