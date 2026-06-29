@@ -12,9 +12,8 @@ import dll_loader
 from typing import List
 
 from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone
 
-from config import PINECONE_API_KEY, PINECONE_INDEX_NAME
+from clients import pinecone_index
 from models.schemas import ParsedQuery, ProductResult
 
 
@@ -63,9 +62,6 @@ def hybrid_search(parsed_query: ParsedQuery, top_k: int = 5) -> List[ProductResu
         metadata_filter = None
 
     # ── 3. Query Pinecone ───────────────────────────────────────────────────
-    pc = Pinecone(api_key=PINECONE_API_KEY)
-    index = pc.Index(PINECONE_INDEX_NAME)
-
     query_kwargs = {
         "vector": query_embedding,
         "top_k": top_k,
@@ -74,7 +70,7 @@ def hybrid_search(parsed_query: ParsedQuery, top_k: int = 5) -> List[ProductResu
     if metadata_filter is not None:
         query_kwargs["filter"] = metadata_filter
 
-    results = index.query(**query_kwargs)
+    results = pinecone_index.query(**query_kwargs)
 
     # ── 4. Parse matches into ProductResult objects ─────────────────────────
     product_results: List[ProductResult] = []

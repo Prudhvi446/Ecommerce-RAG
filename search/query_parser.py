@@ -7,7 +7,7 @@ import json
 
 from groq import Groq
 
-from config import GROQ_API_KEY
+from clients import groq_client
 from models.schemas import ParsedQuery
 
 
@@ -37,10 +37,8 @@ The JSON object MUST have exactly these keys:
 def parse_query(raw_query: str) -> ParsedQuery:
     """Parse a natural-language shopping query into a structured ParsedQuery."""
 
-    client = Groq(api_key=GROQ_API_KEY)
-
     try:
-        chat_completion = client.chat.completions.create(
+        chat_completion = groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},

@@ -7,7 +7,7 @@ from typing import List
 
 from groq import Groq
 
-from config import GROQ_API_KEY
+from clients import groq_client
 from models.schemas import ProductResult
 
 
@@ -49,9 +49,7 @@ def generate_narrative(raw_query: str, results: List[ProductResult]) -> str:
     )
 
     # ── Call Groq ───────────────────────────────────────────────────────────
-    client = Groq(api_key=GROQ_API_KEY)
-
-    chat_completion = client.chat.completions.create(
+    chat_completion = groq_client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": system_message},

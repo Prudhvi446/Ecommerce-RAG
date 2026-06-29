@@ -13,10 +13,15 @@ router = APIRouter(prefix="/api/v1", tags=["Search"])
 
 
 @router.post("/search", response_model=SearchResponse)
-async def search_products(request: SearchRequest) -> SearchResponse:
+def search_products(request: SearchRequest) -> SearchResponse:
     """
     Accept a natural-language shopping query, parse it, run hybrid search
     against Pinecone, and return a conversational recommendation.
+
+    NOTE: This is intentionally a synchronous ``def`` (not ``async def``)
+    so that FastAPI dispatches each request to the default thread-pool.
+    All downstream calls (Groq, Pinecone, SentenceTransformer) are
+    blocking / CPU-bound and would freeze the async event loop otherwise.
     """
 
     # Validate non-empty query
