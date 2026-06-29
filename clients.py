@@ -13,11 +13,17 @@ from sentence_transformers import SentenceTransformer
 
 from config import GROQ_API_KEY, PINECONE_API_KEY, PINECONE_INDEX_NAME
 
+# ── Timeout configuration (seconds) ────────────────────────────────────────
+# Prevents the server from hanging indefinitely if a downstream service is
+# slow or unresponsive.  Adjust these values based on your SLA requirements.
+GROQ_TIMEOUT = 10       # default SDK value is 120s — far too generous
+PINECONE_TIMEOUT = 10   # default SDK value is 300s — far too generous
+
 # ── Groq LLM client (reused across query_parser & response_generator) ───────
-groq_client = Groq(api_key=GROQ_API_KEY)
+groq_client = Groq(api_key=GROQ_API_KEY, timeout=GROQ_TIMEOUT)
 
 # ── Pinecone vector-DB client & index handle ────────────────────────────────
-_pc = Pinecone(api_key=PINECONE_API_KEY)
+_pc = Pinecone(api_key=PINECONE_API_KEY, timeout=PINECONE_TIMEOUT)
 pinecone_index = _pc.Index(PINECONE_INDEX_NAME)
 
 # ── Embedding model (loaded eagerly at import time) ─────────────────────────
